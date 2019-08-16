@@ -80,13 +80,31 @@ namespace MySql.Data.Common
 
     public static Stream GetStream(MySqlConnectionStringBuilder settings)
     {
-      switch (settings.ConnectionProtocol)
+      Exception exception = null;
+      string[] servers = settings.Server.Split(',');
+      settings = new MySqlConnectionStringBuilder(settings.ConnectionString);
+
+      foreach (string server in servers)
       {
-        case MySqlConnectionProtocol.Tcp: return GetTcpStream(settings);
-        case MySqlConnectionProtocol.UnixSocket: return GetUnixSocketStream(settings);        
-        case MySqlConnectionProtocol.SharedMemory: return GetSharedMemoryStream(settings);
-        case MySqlConnectionProtocol.NamedPipe: return GetNamedPipeStream(settings);
+        settings.Server = server;
+        try
+        {
+          switch (settings.ConnectionProtocol)
+          {
+            case MySqlConnectionProtocol.Tcp: return GetTcpStream(settings);
+            case MySqlConnectionProtocol.UnixSocket: return GetUnixSocketStream(settings);        
+            case MySqlConnectionProtocol.SharedMemory: return GetSharedMemoryStream(settings);
+            case MySqlConnectionProtocol.NamedPipe: return GetNamedPipeStream(settings);
+          }
+          break;
+        }
+        catch (Exception e)
+        {
+          exception = e;
+        }
       }
+
+      if (null != exception) throw exception;
       throw new InvalidOperationException(Resources.UnknownConnectionProtocol);
     }
 
